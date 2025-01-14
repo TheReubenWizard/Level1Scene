@@ -161,7 +161,9 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 1.0f));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+	program.sendUniform("lightAmbient.color", vec3(1.0, 1.0, 1.0)); // Set emissive light
 	glutSolidSphere(1, 32, 32);
+	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1)); // Reset ambient light
 	//---------------------------------
 	//render bulb 2
 	m = matrixView;
@@ -171,7 +173,9 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("materialDiffuse", vec3(1.0f, 0.0f, 0.0f));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+	program.sendUniform("lightAmbient.color", vec3(1.0, 0.0, 0.0)); // Set emissive light
 	glutSolidSphere(1, 32, 32);
+	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1)); // Reset ambient light
 	//---------------------------------
 
 	// Point light setup
