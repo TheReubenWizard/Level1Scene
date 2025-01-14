@@ -139,17 +139,49 @@ bool init()
 void renderScene(mat4& matrixView, float time, float deltaTime)
 {
 	program.sendUniform("lightDir.direction", vec3(1.0, 0.5, 1.0));
-	program.sendUniform("lightDir.diffuse", vec3(0.5, 0.5, 0.5));	  // dimmed white light
+	program.sendUniform("lightDir.diffuse", vec3(0.2, 0.2, 0.2));	  // dimmed white light
 
 	mat4 m;
 
 	// setup materials - grey
 	program.sendUniform("materialDiffuse", vec3(0.6f, 0.6f, 0.6f));
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
+	program.sendUniform("shininess", 10.0f);
+
 
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 	program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
 
-	//program.sendUniform("material", vec3(0.6f, 0.6f, 0.6f));
+	//---------------------------------
+	//render bulb 1
+	m = matrixView;
+	m = translate(m, vec3(-2.95f, 4.24f, -1.0f));
+	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+	program.sendUniform("matrixModelView", m);
+
+	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 1.0f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+	glutSolidSphere(1, 32, 32);
+	//---------------------------------
+	//render bulb 2
+	m = matrixView;
+	m = translate(m, vec3(2.95f, 4.24f, -1.0f));
+	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+	program.sendUniform("matrixModelView", m);
+
+	program.sendUniform("materialDiffuse", vec3(1.0f, 0.0f, 0.0f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+	glutSolidSphere(1, 32, 32);
+	//---------------------------------
+
+	// Point light setup
+	program.sendUniform("lightPoint1.position", vec3(-2.95f, 4.24f, -1.0f));
+	program.sendUniform("lightPoint1.diffuse", vec3(0.5f, 0.5f, 0.5f));
+	program.sendUniform("lightPoint1.specular", vec3(1.0f, 1.0f, 1.0f));
+
+	program.sendUniform("lightPoint2.position", vec3(2.95f, 4.24f, -1.0f));
+	program.sendUniform("lightPoint2.diffuse", vec3(0.5f, 0.0f, 0.0f));
+	program.sendUniform("lightPoint2.specular", vec3(1.0f, 1.0f, 1.0f));
 
 
 
@@ -160,12 +192,12 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	table.render(0, m);
 
 	program.sendUniform("materialDiffuse", vec3(0.9f, 0.5f, 0.3f));
-	//program.sendUniform("material", vec3(0.9f, 0.5f, 0.3f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
 	table.render(1, m);
 
 	// setup materials - grey
 	program.sendUniform("materialDiffuse", vec3(0.6f, 0.6f, 0.6f));
-	//program.sendUniform("material", vec3(0.6f, 0.6f, 0.6f));
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
 
 	m = matrixView;
 	m = translate(m, vec3(0.0f, 0, 0.0f));
@@ -187,8 +219,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	// setup materials - light green
 	program.sendUniform("materialDiffuse", vec3(0.5f, 0.7f, 0.9f));
-	//program.sendUniform("material", vec3(0.5f, 0.7f, 0.9f));
-
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
 	m = matrixView;
 	m = translate(m, vec3(0.0f, 3.04f, 0.0f));
 	m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
@@ -197,7 +228,8 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	// setup materials - blue
 	program.sendUniform("materialDiffuse", vec3(0.2f, 0.2f, 0.8f));
-	//program.sendUniform("material", vec3(0.2f, 0.2f, 0.8f));
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
+
 
 	// teapot
 	m = matrixView;
@@ -213,7 +245,8 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = matrixView;
 
 	program.sendUniform("materialDiffuse", vec3(0.9f, 0.1f, 0.1f));
-	//program.sendUniform("material", vec3(0.9f, 0.1f, 0.1f));
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
+
 	m = translate(m, vec3(-1.5f, 3.74f, 0.5f));
 	m = rotate(m, radians(180.f), vec3(0.0f, 0.0f, 1.0f));
 
@@ -252,9 +285,9 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glDisableVertexAttribArray(attribVertex);
 	glDisableVertexAttribArray(attribNormal);
 
-
 	//program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
 	program.sendUniform("materialDiffuse", vec3(0.2f, 0.5f, 0.1f));
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
 	// bunny
 	m = matrixView;
 
@@ -265,8 +298,6 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(4.0f, 4.0f, 4.0f));
 
 	bunny.render(0, m);
-
-
 }
 
 void onRender()
@@ -460,4 +491,3 @@ int main(int argc, char** argv)
 
 	return 1;
 }
-
