@@ -47,7 +47,13 @@ unsigned indexBuffer = 0;
 
 float pyramidRotation = 0.0f;
 
+bool lamp1On = true;
+bool lamp2On = true;
+float lightIntensity1 = 1.0;
+float lightIntensity2 = 1.0;
 
+GLuint idTexWood;
+GLuint idTexNone;
 
 bool init()
 {
@@ -89,6 +95,7 @@ bool init()
 
 	if (!lamp2.load("models\\lamp.obj")) return false;
 
+
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
 	matrixView *= lookAt(
@@ -102,6 +109,8 @@ bool init()
 	// glut additional setup
 	glutSetVertexAttribCoord3(program.getAttribLocation("aVertex"));
 	glutSetVertexAttribNormal(program.getAttribLocation("aNormal"));
+	glutSetVertexAttribTexCoord2(program.getAttribLocation("aTexCoord"));
+
 
 	float vertices[] = {
 		-4, 0, -4, 4, 0, -4, 0, 7, 0, -4, 0, 4, 4, 0, 4, 0, 7, 0,
@@ -128,6 +137,34 @@ bool init()
 	glGenBuffers(1, &indexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	// TEXTURE LOADING START
+
+	// Load Texture
+	C3dglBitmap bm;
+
+	bm.load("models/oak.bmp", GL_RGBA);
+	if (!bm.getBits()) return false;
+
+	// Prepare texture buffer
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &idTexWood);
+	glBindTexture(GL_TEXTURE_2D, idTexWood);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bm.getWidth(), bm.getHeight(), 0, GL_RGBA,
+		GL_UNSIGNED_BYTE, bm.getBits());
+
+	// Null Texture
+	glGenTextures(1, &idTexNone);
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	BYTE bytes[] = { 255, 255, 255 };
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_BGR, GL_UNSIGNED_BYTE, &bytes);
+
+	// Send texture info to shaders
+	program.sendUniform("texture0", 0);
+
+	// TEXTURE LOADING END
 
 
 	cout << endl;
@@ -160,6 +197,9 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 	program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
 
+	program.sendUniform("lightIntensity1", lightIntensity1);
+	program.sendUniform("lightIntensity2", lightIntensity2);
+
 	//---------------------------------
 	//render bulb 1
 	m = matrixView;
@@ -169,7 +209,11 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 1.0f));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
-	program.sendUniform("lightAmbient.color", vec3(1.0, 1.0, 1.0)); // Set emissive light
+	if (lamp1On)
+		program.sendUniform("lightAmbient.color", vec3(1.0, 1.0, 1.0));
+	else
+		program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	glutSolidSphere(1, 32, 32);
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1)); // Reset ambient light
 	//---------------------------------
@@ -178,6 +222,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = matrixView;
 	m = translate(m, vec3(-1.60f, 3.04f, -1.0f));
 	m = scale(m, vec3(0.015f, 0.015f, 0.015f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	lamp1.render(0, m);
 
 	//render bulb 2
@@ -188,7 +233,12 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("materialDiffuse", vec3(1.0f, 0.0f, 0.0f));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
-	program.sendUniform("lightAmbient.color", vec3(1.0, 0.0, 0.0)); // Set emissive light
+	if (lamp2On)
+		program.sendUniform("lightAmbient.color", vec3(1.0, 0.0, 0.0));
+	else
+		program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
+
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	glutSolidSphere(1, 32, 32);
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1)); // Reset ambient light
 	//---------------------------------
@@ -203,6 +253,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = translate(m, vec3(1.6f, 3.04f, -0.5f));
 	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.015f, 0.015f, 0.015f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	lamp2.render(0, m);
 
 	// Point light setup
@@ -214,16 +265,16 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("lightPoint2.diffuse", vec3(0.5f, 0.0f, 0.0f));
 	program.sendUniform("lightPoint2.specular", vec3(1.0f, 1.0f, 1.0f));
 
-
-
 	m = matrixView;
 	m = translate(m, vec3(0.0f, 0, 0.0f));
 	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.004f, 0.004f, 0.004f));
+	glBindTexture(GL_TEXTURE_2D, idTexWood);
 	table.render(0, m);
 
 	program.sendUniform("materialDiffuse", vec3(0.9f, 0.5f, 0.3f));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+	glBindTexture(GL_TEXTURE_2D, idTexWood);
 	table.render(1, m);
 
 	// setup materials - grey
@@ -234,18 +285,21 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = translate(m, vec3(0.0f, 0, 0.0f));
 	m = rotate(m, radians(0.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.004f, 0.004f, 0.004f));
+	glBindTexture(GL_TEXTURE_2D, idTexWood);
 	table.render(0, m);
 
 	m = matrixView;
 	m = translate(m, vec3(0.0f, 0, 0.0f));
 	m = rotate(m, radians(270.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.004f, 0.004f, 0.004f));
+	glBindTexture(GL_TEXTURE_2D, idTexWood);
 	table.render(0, m);
 
 	m = matrixView;
 	m = translate(m, vec3(0.0f, 0, 0.0f));
 	m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.004f, 0.004f, 0.004f));
+	glBindTexture(GL_TEXTURE_2D, idTexWood);
 	table.render(0, m);
 
 	// setup materials - light green
@@ -255,6 +309,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = translate(m, vec3(0.0f, 3.04f, 0.0f));
 	m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	vase.render(0, m);
 
 	// setup materials - blue
@@ -269,6 +324,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
 	// the GLUT objects require the Model View Matrix setup
 	program.sendUniform("matrixModelView", m);
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	glutSolidTeapot(2.0);
 
 
@@ -291,7 +347,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
 
 	program.sendUniform("matrixModelView", m);
-
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	// Get Attribute Locations
 	GLuint attribVertex = program.getAttribLocation("aVertex");
 	GLuint attribNormal = program.getAttribLocation("aNormal");
@@ -316,9 +372,11 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glDisableVertexAttribArray(attribVertex);
 	glDisableVertexAttribArray(attribNormal);
 
+
 	//program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
 	program.sendUniform("materialDiffuse", vec3(0.2f, 0.5f, 0.1f));
 	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	// bunny
 	m = matrixView;
 
@@ -386,6 +444,21 @@ void onKeyDown(unsigned char key, int x, int y)
 	case 'd': _acc.x = -accel; break;
 	case 'e': _acc.y = accel; break;
 	case 'q': _acc.y = -accel; break;
+
+	case '1':
+		lamp1On = !lamp1On;
+		if (lamp1On)
+			lightIntensity1 = 1.0;
+		else
+			lightIntensity1 = 0.0;
+		break;
+	case '2':
+		lamp2On = !lamp2On;
+		if (lamp2On)
+			lightIntensity2 = 1.0;
+		else
+			lightIntensity2 = 0.0;
+		break;
 	}
 }
 

@@ -12,10 +12,13 @@ uniform float shininess;
 
 in vec3 aVertex;
 in vec3 aNormal;
+in vec2 aTexCoord; // Texture Coordinate Input
 
 out vec4 color;
-vec4 position;
-vec3 normal;
+out vec4 position;
+out vec3 normal;
+out vec2 texCoord0; // Texture Coordinate Output
+
 
 // Light declarations
 struct AMBIENT
@@ -53,31 +56,8 @@ struct POINT
 	vec3 diffuse;
 	vec3 specular;
 };
-uniform POINT lightPoint1; // First light
-uniform POINT lightPoint2; // Second light
-
-
-vec4 PointLight(POINT light)
-{
-    // Calculate Point Light
-    vec4 color = vec4(0, 0, 0, 0);
-
-    // Calculate light vector L (normalized displacement vector)
-    vec4 lightPositionViewSpace = matrixView * vec4(light.position, 1.0);
-    vec3 L = normalize((lightPositionViewSpace.xyz - position.xyz));
-    
-    float NdotL = dot(normal, L);
-    color += vec4(materialDiffuse * light.diffuse, 1) * max(NdotL, 0);
-
-    // Specular Calculation:
-    vec3 V = normalize(-position.xyz);
-    vec3 R = reflect(-L, normal);
-    float RdotV = dot(R, V);
-    color += vec4(materialSpecular * light.specular * pow(max(RdotV, 0), shininess), 1);
-
-    return color;
-}
-
+uniform POINT lightPoint1;
+uniform POINT lightPoint2;
 
 void main(void) 
 {
@@ -85,11 +65,13 @@ void main(void)
 	// calculate position
 	position = matrixModelView * vec4(aVertex, 1.0);
 	gl_Position = matrixProjection * position;
-
+    
+    // calculate texture coordinate
+	texCoord0 = aTexCoord; // Pass texture coord
+    
 	// calculate light
 	color = vec4(0, 0, 0, 0);
 	color += AmbientLight(lightAmbient);
 	color += DirectionalLight(lightDir);
-	color += PointLight(lightPoint1); // First light
-    color += PointLight(lightPoint2); // Second light
+	
 }
