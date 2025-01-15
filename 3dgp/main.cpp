@@ -14,22 +14,18 @@ using namespace std;
 using namespace _3dgl;
 using namespace glm;
 
+// Global Variables
+
 // GLSL Program
 C3dglProgram program;
 
 // 3D models
 C3dglModel camera;
-
 C3dglModel table;
-
 C3dglModel vase;
-
 C3dglModel bunny;
-
 C3dglModel lamp1;
-
 C3dglModel lamp2;
-
 
 // The View Matrix
 mat4 matrixView;
@@ -40,20 +36,84 @@ float accel = 4.f;		// camera acceleration
 vec3 _acc(0), _vel(0);	// camera acceleration and velocity vectors
 float _fov = 60.f;		// field of view (zoom)
 
-// buffers names
+// Buffers
 unsigned vertexBuffer = 0;
 unsigned normalBuffer = 0;
 unsigned indexBuffer = 0;
 
+// Animation variables
 float pyramidRotation = 0.0f;
 
+// Lighting variables
 bool lamp1On = true;
 bool lamp2On = true;
 float lightIntensity1 = 1.0;
 float lightIntensity2 = 1.0;
 
+// Texture IDs
 GLuint idTexWood;
 GLuint idTexNone;
+
+
+// Function Declarations
+bool init();
+void renderScene(mat4& matrixView, float time, float deltaTime);
+void onRender();
+void onReshape(int w, int h);
+void onKeyDown(unsigned char key, int x, int y);
+void onKeyUp(unsigned char key, int x, int y);
+void onSpecDown(int key, int x, int y);
+void onSpecUp(int key, int x, int y);
+void onMouse(int button, int state, int x, int y);
+void onMotion(int x, int y);
+void onMouseWheel(int button, int dir, int x, int y);
+
+int main(int argc, char** argv)
+{
+	// init GLUT and create Window
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowPosition(100, 100);
+	glutInitWindowSize(1280, 720);
+	glutCreateWindow("3DGL Scene: First Example");
+
+	// init glew
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		C3dglLogger::log("GLEW Error {}", (const char*)glewGetErrorString(err));
+		return 0;
+	}
+	C3dglLogger::log("Using GLEW {}", (const char*)glewGetString(GLEW_VERSION));
+
+	// register callbacks
+	glutDisplayFunc(onRender);
+	glutReshapeFunc(onReshape);
+	glutKeyboardFunc(onKeyDown);
+	glutSpecialFunc(onSpecDown);
+	glutKeyboardUpFunc(onKeyUp);
+	glutSpecialUpFunc(onSpecUp);
+	glutMouseFunc(onMouse);
+	glutMotionFunc(onMotion);
+	glutMouseWheelFunc(onMouseWheel);
+
+	C3dglLogger::log("Vendor: {}", (const char*)glGetString(GL_VENDOR));
+	C3dglLogger::log("Renderer: {}", (const char*)glGetString(GL_RENDERER));
+	C3dglLogger::log("Version: {}", (const char*)glGetString(GL_VERSION));
+	C3dglLogger::log("");
+
+	// init light and everything – not a GLUT or callback function!
+	if (!init())
+	{
+		C3dglLogger::log("Application failed to initialise\r\n");
+		return 0;
+	}
+
+	// enter GLUT event processing cycle
+	glutMainLoop();
+
+	return 1;
+}
 
 bool init()
 {
@@ -84,15 +144,10 @@ bool init()
 
 	// load your 3D models here!
 	if (!camera.load("models\\camera.3ds")) return false;
-
 	if (!table.load("models\\table.obj")) return false;
-
 	if (!vase.load("models\\vase.obj")) return false;
-
 	if (!bunny.load("models\\bunny.obj")) return false;
-
 	if (!lamp1.load("models\\lamp.obj")) return false;
-
 	if (!lamp2.load("models\\lamp.obj")) return false;
 
 
@@ -174,31 +229,28 @@ bool init()
 	cout << "  Shift to speed up your movement" << endl;
 	cout << "  Drag the mouse to look around" << endl;
 	cout << endl;
-
-	//program.sendUniform("material", vec3(0.2f, 0.5f, 0.4f));
-	//program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
-
 	return true;
 }
 
 void renderScene(mat4& matrixView, float time, float deltaTime)
 {
+	// Directional light settings
 	program.sendUniform("lightDir.direction", vec3(1.0, 0.5, 1.0));
-	program.sendUniform("lightDir.diffuse", vec3(0.2, 0.2, 0.2));	  // dimmed white light
+	program.sendUniform("lightDir.diffuse", vec3(0.2, 0.2, 0.2));
 
-	mat4 m;
-
-	// setup materials - grey
+	// Material settings
 	program.sendUniform("materialDiffuse", vec3(0.6f, 0.6f, 0.6f));
 	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
 	program.sendUniform("shininess", 10.0f);
 
-
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 	program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
 
+	// Point Light intensity
 	program.sendUniform("lightIntensity1", lightIntensity1);
 	program.sendUniform("lightIntensity2", lightIntensity2);
+
+	mat4 m;
 
 	//---------------------------------
 	//render bulb 1
@@ -225,6 +277,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	lamp1.render(0, m);
 
+	//---------------------------------
 	//render bulb 2
 	m = matrixView;
 	m = translate(m, vec3(1.95f, 4.24f, -0.5f));
@@ -237,13 +290,12 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 		program.sendUniform("lightAmbient.color", vec3(1.0, 0.0, 0.0));
 	else
 		program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
-
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	glutSolidSphere(1, 32, 32);
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1)); // Reset ambient light
 	//---------------------------------
 
-	//gray
+	// gray
 	program.sendUniform("materialDiffuse", vec3(0.6f, 0.6f, 0.6f));
 	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
 	program.sendUniform("shininess", 10.0f);
@@ -315,7 +367,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	// setup materials - blue
 	program.sendUniform("materialDiffuse", vec3(0.2f, 0.2f, 0.8f));
 	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
-
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 
 	// teapot
 	m = matrixView;
@@ -324,9 +376,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
 	// the GLUT objects require the Model View Matrix setup
 	program.sendUniform("matrixModelView", m);
-	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	glutSolidTeapot(2.0);
-
 
 	// pyramid
 	m = matrixView;
@@ -377,6 +427,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("materialDiffuse", vec3(0.2f, 0.5f, 0.1f));
 	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
+
 	// bunny
 	m = matrixView;
 
@@ -433,7 +484,7 @@ void onReshape(int w, int h)
 	program.sendUniform("matrixProjection", matrixProjection);
 }
 
-// Handle WASDQE keys
+// Handle WASDQE keys and lamps
 void onKeyDown(unsigned char key, int x, int y)
 {
 	switch (tolower(key))
@@ -547,51 +598,4 @@ void onMouseWheel(int button, int dir, int x, int y)
 {
 	_fov = glm::clamp(_fov - dir * 5.f, 5.0f, 175.f);
 	onReshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
-}
-
-int main(int argc, char** argv)
-{
-	// init GLUT and create Window
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(1280, 720);
-	glutCreateWindow("3DGL Scene: First Example");
-
-	// init glew
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
-		C3dglLogger::log("GLEW Error {}", (const char*)glewGetErrorString(err));
-		return 0;
-	}
-	C3dglLogger::log("Using GLEW {}", (const char*)glewGetString(GLEW_VERSION));
-
-	// register callbacks
-	glutDisplayFunc(onRender);
-	glutReshapeFunc(onReshape);
-	glutKeyboardFunc(onKeyDown);
-	glutSpecialFunc(onSpecDown);
-	glutKeyboardUpFunc(onKeyUp);
-	glutSpecialUpFunc(onSpecUp);
-	glutMouseFunc(onMouse);
-	glutMotionFunc(onMotion);
-	glutMouseWheelFunc(onMouseWheel);
-
-	C3dglLogger::log("Vendor: {}", (const char*)glGetString(GL_VENDOR));
-	C3dglLogger::log("Renderer: {}", (const char*)glGetString(GL_RENDERER));
-	C3dglLogger::log("Version: {}", (const char*)glGetString(GL_VERSION));
-	C3dglLogger::log("");
-
-	// init light and everything – not a GLUT or callback function!
-	if (!init())
-	{
-		C3dglLogger::log("Application failed to initialise\r\n");
-		return 0;
-	}
-
-	// enter GLUT event processing cycle
-	glutMainLoop();
-
-	return 1;
 }
