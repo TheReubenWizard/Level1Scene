@@ -26,6 +26,10 @@ C3dglModel vase;
 
 C3dglModel bunny;
 
+C3dglModel lamp1;
+
+C3dglModel lamp2;
+
 
 // The View Matrix
 mat4 matrixView;
@@ -80,6 +84,10 @@ bool init()
 	if (!vase.load("models\\vase.obj")) return false;
 
 	if (!bunny.load("models\\bunny.obj")) return false;
+
+	if (!lamp1.load("models\\lamp.obj")) return false;
+
+	if (!lamp2.load("models\\lamp.obj")) return false;
 
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
@@ -155,7 +163,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	//---------------------------------
 	//render bulb 1
 	m = matrixView;
-	m = translate(m, vec3(-2.95f, 4.24f, -1.0f));
+	m = translate(m, vec3(-1.95f, 4.24f, -1.0f));
 	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
 	program.sendUniform("matrixModelView", m);
 
@@ -165,9 +173,16 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glutSolidSphere(1, 32, 32);
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1)); // Reset ambient light
 	//---------------------------------
+
+	//render lamp1
+	m = matrixView;
+	m = translate(m, vec3(-1.60f, 3.04f, -1.0f));
+	m = scale(m, vec3(0.015f, 0.015f, 0.015f));
+	lamp1.render(0, m);
+
 	//render bulb 2
 	m = matrixView;
-	m = translate(m, vec3(2.95f, 4.24f, -1.0f));
+	m = translate(m, vec3(1.95f, 4.24f, -0.5f));
 	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
 	program.sendUniform("matrixModelView", m);
 
@@ -177,6 +192,18 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glutSolidSphere(1, 32, 32);
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1)); // Reset ambient light
 	//---------------------------------
+
+	//gray
+	program.sendUniform("materialDiffuse", vec3(0.6f, 0.6f, 0.6f));
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
+	program.sendUniform("shininess", 10.0f);
+
+	//render lamp2
+	m = matrixView;
+	m = translate(m, vec3(1.6f, 3.04f, -0.5f));
+	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.015f, 0.015f, 0.015f));
+	lamp2.render(0, m);
 
 	// Point light setup
 	program.sendUniform("lightPoint1.position", vec3(-2.95f, 4.24f, -1.0f));
