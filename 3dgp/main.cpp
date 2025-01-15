@@ -257,11 +257,11 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	lamp2.render(0, m);
 
 	// Point light setup
-	program.sendUniform("lightPoint1.position", vec3(-2.95f, 4.24f, -1.0f));
+	program.sendUniform("lightPoint1.position", vec3(-1.95f, 4.24f, -1.0f));
 	program.sendUniform("lightPoint1.diffuse", vec3(0.5f, 0.5f, 0.5f));
 	program.sendUniform("lightPoint1.specular", vec3(1.0f, 1.0f, 1.0f));
 
-	program.sendUniform("lightPoint2.position", vec3(2.95f, 4.24f, -1.0f));
+	program.sendUniform("lightPoint2.position", vec3(1.95f, 4.24f, -0.5f));
 	program.sendUniform("lightPoint2.diffuse", vec3(0.5f, 0.0f, 0.0f));
 	program.sendUniform("lightPoint2.specular", vec3(1.0f, 1.0f, 1.0f));
 

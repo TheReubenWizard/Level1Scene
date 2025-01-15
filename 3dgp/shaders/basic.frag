@@ -34,6 +34,14 @@ struct AMBIENT
 };
 uniform AMBIENT lightAmbient;
 
+// Directional Light
+struct DIRECTIONAL
+{	
+	vec3 direction;
+	vec3 diffuse;
+};
+uniform DIRECTIONAL lightDir;
+
 // TEXTURE START
 in vec2 texCoord0; // Texture coord input
 uniform sampler2D texture0; // Sampler for the texture
@@ -43,6 +51,16 @@ vec4 AmbientLight(AMBIENT light)
 {
     // Calculate Ambient Light
 	return vec4(materialAmbient * light.color, 1);
+}
+
+vec4 DirectionalLight(DIRECTIONAL light)
+{
+	// Calculate Directional Light
+	vec4 color = vec4(0, 0, 0, 0);
+	vec3 L = normalize(mat3(matrixView) * light.direction);
+	float NdotL = dot(normal, L);
+	color += vec4(materialDiffuse * light.diffuse, 1) * max(NdotL, 0);
+	return color;
 }
 
 vec4 PointLight(POINT light, float intensity)
@@ -70,8 +88,9 @@ void main(void)
 {
     outColor = vec4(0,0,0,0);
     outColor += AmbientLight(lightAmbient);
+	outColor += DirectionalLight(lightDir); // ADD THIS!
     outColor += PointLight(lightPoint1, lightIntensity1);
     outColor += PointLight(lightPoint2, lightIntensity2);
     // apply texture
-	outColor *= texture(texture0, texCoord0); // NEW: Apply texture
+	outColor *= texture(texture0, texCoord0); 
 }
