@@ -11,7 +11,6 @@ uniform float shininess;
 // View Matrix
 uniform mat4 matrixView;
 
-// Point Light Data
 struct POINT
 {
 		vec3 position;
@@ -102,13 +101,15 @@ void main(void)
     // Apply texture to the output
 	outColor *= texture(texture0, texCoord0);
 	
-	// Fresnel Calculation
-	float F0 = 0.0; // Typical value for dielectrics
+	// Fresnel Calculation and Reflection:
+	float F0 = 0.3; // Typical value for dielectrics
 	vec3 V = normalize(-position.xyz);  // View direction
 	float NdotV = max(dot(normal, V), 0.0); // Clamp to avoid negative values
 	float fresnel = F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);
 
 	// Mix the base color with the reflection based on the Fresnel factor
 	vec4 reflectionColor = texture(textureCubeMap, texCoordCubeMap);
-	outColor = mix(outColor, reflectionColor, fresnel); // Blend with Fresnel
+
+	// Apply reflection ONLY if reflectionPower > 0
+	outColor = mix(outColor, mix(outColor, reflectionColor, fresnel), reflectionPower); // Blend with Fresnel
 }

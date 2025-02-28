@@ -517,7 +517,7 @@ void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
 void renderReflectiveObjects(mat4 matrixView, float time, float deltaTime)
 {
 	mat4 m;
-	program.sendUniform("reflectionPower", 1.0f);  // Enable reflections
+	program.sendUniform("reflectionPower", 0.9f);  // Enable reflections
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
 
