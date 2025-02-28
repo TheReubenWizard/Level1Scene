@@ -48,6 +48,11 @@ in vec2 texCoord0; // Texture coordinates
 uniform sampler2D texture0; // Sampler for the texture
 // TEXTURE END
 
+// Environment Mapping 
+in vec3 texCoordCubeMap; // in variable
+uniform samplerCube textureCubeMap;
+uniform float reflectionPower;
+
 // Calculates the ambient light of an object
 vec4 AmbientLight(AMBIENT light)
 {
@@ -93,6 +98,9 @@ void main(void)
 	outColor += DirectionalLight(lightDir);
     outColor += PointLight(lightPoint1, lightIntensity1);
     outColor += PointLight(lightPoint2, lightIntensity2);
+    
     // Apply texture to the output
-	outColor *= texture(texture0, texCoord0); 
+	outColor *= texture(texture0, texCoord0);
+	// mixing the textures
+		outColor = mix(outColor, texture(textureCubeMap, texCoordCubeMap), reflectionPower);
 }
