@@ -15,7 +15,11 @@ using namespace _3dgl;
 using namespace glm;
 
 // Global Variables
-GLuint idTexCube; // global variable for cubemap
+GLuint idTexCube1; // global variable for cubemap
+GLuint idTexCube2; // global variable for cubemap
+
+bool renderVase = true;
+bool renderTeapot = true;
 
 // GLSL Program
 C3dglProgram program;
@@ -116,10 +120,14 @@ int main(int argc, char** argv)
 	return 1;
 }
 
+// Global Variables (Add these)
+GLuint idTexCubeVase, idTexCubeTeapot; // global variable for cubemap
+
+bool renderOnlyVase = false, renderOnlyTeapot = false;
+
 bool init()
 {
-
-	// Local variables
+	// shaders
 	C3dglShader vertexShader;
 	C3dglShader fragmentShader;
 
@@ -129,8 +137,6 @@ bool init()
 
 	if (!fragmentShader.create(GL_FRAGMENT_SHADER)) return false;
 	if (!fragmentShader.loadFromFile("shaders/basic.frag")) return false;
-	if (!fragmentShader.compile()) return false;
-
 	if (!program.create()) return false;
 	if (!program.attach(vertexShader)) return false;
 	if (!program.attach(fragmentShader)) return false;
@@ -138,18 +144,23 @@ bool init()
 	if (!program.use(true)) return false;
 
 	// rendering states
-	glEnable(GL_DEPTH_TEST);    // depth test is necessary for most 3D scenes
-	glEnable(GL_NORMALIZE);        // normalization is needed by AssImp library models
-	glShadeModel(GL_SMOOTH);    // smooth shading mode is the default one; try GL_FLAT here!
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);    // this is the default one; try GL_LINE!
+	glEnable(GL_DEPTH_TEST);	// depth test is necessary for most 3D scenes
+	glEnable(GL_NORMALIZE);		// normalization is needed by AssImp library models
+	glShadeModel(GL_SMOOTH);	// smooth shading mode is the default one; try GL_FLAT here!
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);	// this is the default one; try GL_LINE!
 
 
 	// load your 3D models here!
 	if (!camera.load("models\\camera.3ds")) return false;
+
 	if (!table.load("models\\table.obj")) return false;
+
 	if (!vase.load("models\\vase.obj")) return false;
+
 	if (!bunny.load("models\\bunny.obj")) return false;
+
 	if (!lamp1.load("models\\lamp.obj")) return false;
+
 	if (!lamp2.load("models\\lamp.obj")) return false;
 
 
@@ -223,20 +234,29 @@ bool init()
 
 	// TEXTURE LOADING END
 
-				// load Cube Map
+	 // load Cube Map for Vase
 	glActiveTexture(GL_TEXTURE1);
-	glGenTextures(1, &idTexCube);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
+	glGenTextures(1, &idTexCubeVase);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCubeVase);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	//DO NOT LOAD BITMAPS IN HERE, WE WILL RENDER TO THE TEXTURE
+	// load Cube Map for Teapot
+	glActiveTexture(GL_TEXTURE2);
+	glGenTextures(1, &idTexCubeTeapot);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCubeTeapot);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-// Send the cube map info to the shaders
-	program.sendUniform("textureCubeMap", 1);
+	// Send the cube map info to the shaders
+	program.sendUniform("textureCubeMapVase", 1);
+	program.sendUniform("textureCubeMapTeapot", 2);
 
 	cout << endl;
 	cout << "Use:" << endl;
@@ -245,7 +265,6 @@ bool init()
 	cout << "  Shift to speed up your movement" << endl;
 	cout << "  Drag the mouse to look around" << endl;
 	cout << endl;
-
 
 	return true;
 }
@@ -270,6 +289,9 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("lightIntensity2", lightIntensity2);
 
 	mat4 m;
+	//program.sendUniform("reflectionPower", 0.9f);  // Enable reflections
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube1);
 
 	//---------------------------------
 	//render bulb 1
@@ -285,6 +307,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	else
 		program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
+
 	glutSolidSphere(1, 32, 32);
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1)); // Reset ambient light
 	//---------------------------------
@@ -335,6 +358,8 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("lightPoint2.diffuse", vec3(0.5f, 0.0f, 0.0f));
 	program.sendUniform("lightPoint2.specular", vec3(1.0f, 1.0f, 1.0f));
 
+	program.sendUniform("reflectionPower", 0.0f);
+
 	m = matrixView;
 	m = translate(m, vec3(0.0f, 0, 0.0f));
 	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
@@ -372,15 +397,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glBindTexture(GL_TEXTURE_2D, idTexWood);
 	table.render(0, m);
 
-	// setup materials - light green
-	/*program.sendUniform("materialDiffuse", vec3(0.5f, 0.7f, 0.9f));
-	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
-	m = matrixView;
-	m = translate(m, vec3(0.0f, 3.04f, 0.0f));
-	m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
-	glBindTexture(GL_TEXTURE_2D, idTexNone);
-	vase.render(0, m);*/
+	program.sendUniform("reflectionPower", 0.9f);
 
 	// setup materials - blue
 	program.sendUniform("materialDiffuse", vec3(0.2f, 0.2f, 0.8f));
@@ -388,13 +405,23 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
 
 	// teapot
-	m = matrixView;
-	m = translate(m, vec3(1.5f, 3.36f, 0.5f));
-	m = rotate(m, radians(320.f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
-	// the GLUT objects require the Model View Matrix setup
-	program.sendUniform("matrixModelView", m);
-	glutSolidTeapot(2.0);
+	if (renderTeapot)
+	{
+		program.sendUniform("reflectionPower", 0.8f);  // Enable reflections
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube2);
+
+		m = matrixView;
+		m = translate(m, vec3(1.5f, 3.36f, 0.5f));
+		m = rotate(m, radians(320.f), vec3(0.0f, 1.0f, 0.0f));
+		m = scale(m, vec3(0.2f, 0.2f, 0.2f));
+		// the GLUT objects require the Model View Matrix setup
+		program.sendUniform("matrixModelView", m);
+		glutSolidTeapot(2.0);
+
+		program.sendUniform("reflectionPower", 0.0); //Disable reflections
+	}
+	
 
 	// pyramid
 	m = matrixView;
@@ -455,6 +482,25 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(4.0f, 4.0f, 4.0f));
 
 	bunny.render(0, m);
+
+	if (renderVase)
+	{
+		program.sendUniform("reflectionPower", 0.8f);  // Enable reflections
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube1);
+
+		// setup materials - light green
+		program.sendUniform("materialDiffuse", vec3(0.5f, 0.7f, 0.9f));
+		program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
+		m = matrixView;
+		m = translate(m, vec3(0.0f, 3.04f, 0.0f));
+		m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
+		m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+		program.sendUniform("matrixModelView", m);
+		vase.render(0, m);
+
+		//program.sendUniform("reflectionPower", 0.0); //Disable reflections
+	}
 }
 
 //----------------------------------
@@ -462,6 +508,61 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 //----------------------------------
 
 void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
+{
+	// Store the current viewport in a safe place
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	int w = viewport[2];
+	int h = viewport[3];
+	
+	// setup the viewport to 256x256, 90 degrees FoV (Field of View)
+	glViewport(0, 0, 256, 256);
+	program.sendUniform("matrixProjection", perspective(radians(90.f), 1.0f, 0.02f, 1000.0f));
+
+	// render environment 6 times
+	program.sendUniform("reflectionPower", 0.0);
+	for (int i = 0; i < 6; ++i)
+	{
+		// clear background
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// setup the camera
+		const GLfloat ROTATION[6][6] =
+		{        // at              up
+				{ 1.0, 0.0, 0.0,   0.0, -1.0, 0.0 },  // pos x
+				{ -1.0, 0.0, 0.0,  0.0, -1.0, 0.0 },  // neg x
+				{ 0.0, 1.0, 0.0,   0.0, 0.0, 1.0 },   // pos y
+				{ 0.0, -1.0, 0.0,  0.0, 0.0, -1.0 },  // neg y
+				{ 0.0, 0.0, 1.0,   0.0, -1.0, 0.0 },  // poz z
+				{ 0.0, 0.0, -1.0,  0.0, -1.0, 0.0 }   // neg z
+		};
+		mat4 matrixView2 = lookAt(
+			vec3(x, y, z),
+			vec3(x + ROTATION[i][0], y + ROTATION[i][1], z + ROTATION[i][2]),
+			vec3(ROTATION[i][3], ROTATION[i][4], ROTATION[i][5]));
+
+		// send the View Matrix
+		program.sendUniform("matrixView", matrixView2);
+
+		// render scene objects - all but the reflective one
+		glActiveTexture(GL_TEXTURE0);
+		renderVase = false;
+		renderScene(matrixView2, time, deltaTime);
+		renderVase = true;
+
+		// send the image to the cube texture
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube1);
+		glCopyTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, 0, 0, 256, 256, 0);
+	}
+	// restore the matrixView, viewport and projection
+
+	glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);      // set the viewport (x, y, w, h)
+	mat4 matrixProjection = perspective(radians(_fov), (float)viewport[2] / (float)viewport[3], 0.02f, 1000.f);
+	program.sendUniform("matrixProjection", matrixProjection);
+}
+
+void prepareCubeMapTeapot(float x, float y, float z, float time, float deltaTime)
 {
 	// Store the current viewport in a safe place
 	GLint viewport[4];
@@ -500,11 +601,13 @@ void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
 
 		// render scene objects - all but the reflective one
 		glActiveTexture(GL_TEXTURE0);
+		renderTeapot = false;
 		renderScene(matrixView2, time, deltaTime);
+		renderTeapot = true;
 
 		// send the image to the cube texture
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube2);
 		glCopyTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, 0, 0, 256, 256, 0);
 	}
 	// restore the matrixView, viewport and projection
@@ -514,25 +617,25 @@ void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
 	program.sendUniform("matrixProjection", matrixProjection);
 }
 
-void renderReflectiveObjects(mat4 matrixView, float time, float deltaTime)
-{
-	mat4 m;
-	program.sendUniform("reflectionPower", 1.0f);  // Enable reflections
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
-
-	// setup materials - light green
-	program.sendUniform("materialDiffuse", vec3(0.5f, 0.7f, 0.9f));
-	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
-	m = matrixView;
-	m = translate(m, vec3(0.0f, 3.04f, 0.0f));
-	m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
-	program.sendUniform("matrixModelView", m);
-	vase.render(0, m);
-
-	program.sendUniform("reflectionPower", 0.0f); //Disable reflections
-}
+//void renderVase(mat4 matrixView, float time, float deltaTime)
+//{
+//	mat4 m;
+//	program.sendUniform("reflectionPower", 0.8f);  // Enable reflections
+//	glActiveTexture(GL_TEXTURE1);
+//	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
+//
+//	 setup materials - light green
+//	program.sendUniform("materialDiffuse", vec3(0.5f, 0.7f, 0.9f));
+//	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
+//	m = matrixView;
+//	m = translate(m, vec3(0.0f, 3.04f, 0.0f));
+//	m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
+//	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+//	program.sendUniform("matrixModelView", m);
+//	vase.render(0, m);
+//
+//	program.sendUniform("reflectionPower", 0.0); //Disable reflections
+//}
 
 //----------------------------------
 // CODE for the Dynamic Environment Map End
@@ -549,7 +652,8 @@ void onRender()
 	float cubeMapX = 0.0f;  // X coordinate for cube map center
 	float cubeMapY = 4.2f;  // Y coordinate for cube map center
 	float cubeMapZ = 0.0f;  // Z coordinate for cube map center
-	prepareCubeMap(cubeMapX, cubeMapY, cubeMapZ, time, deltaTime);
+	prepareCubeMap(0.0f, 4.2f, 0.0f, time, deltaTime);
+	prepareCubeMapTeapot(1.5f, 3.36f, 0.5f, time, deltaTime);
 
 	// clear screen and buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -569,7 +673,7 @@ void onRender()
 	// render the scene objects
 	renderScene(matrixView, time, deltaTime);
 
-	renderReflectiveObjects(matrixView, time, deltaTime);
+	//renderVase(matrixView, time, deltaTime);
 
 	// essential for double-buffering technique
 	glutSwapBuffers();
