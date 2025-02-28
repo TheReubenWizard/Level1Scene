@@ -101,6 +101,14 @@ void main(void)
     
     // Apply texture to the output
 	outColor *= texture(texture0, texCoord0);
-	// mixing the textures
-		outColor = mix(outColor, texture(textureCubeMap, texCoordCubeMap), reflectionPower);
+	
+	// Fresnel Calculation
+	float F0 = 0.0; // Typical value for dielectrics
+	vec3 V = normalize(-position.xyz);  // View direction
+	float NdotV = max(dot(normal, V), 0.0); // Clamp to avoid negative values
+	float fresnel = F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);
+
+	// Mix the base color with the reflection based on the Fresnel factor
+	vec4 reflectionColor = texture(textureCubeMap, texCoordCubeMap);
+	outColor = mix(outColor, reflectionColor, fresnel); // Blend with Fresnel
 }

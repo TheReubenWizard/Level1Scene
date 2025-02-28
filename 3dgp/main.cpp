@@ -373,14 +373,14 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	table.render(0, m);
 
 	// setup materials - light green
-	program.sendUniform("materialDiffuse", vec3(0.5f, 0.7f, 0.9f));
+	/*program.sendUniform("materialDiffuse", vec3(0.5f, 0.7f, 0.9f));
 	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
-	//m = matrixView;
-	//m = translate(m, vec3(0.0f, 3.04f, 0.0f));
-	//m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
-	//m = scale(m, vec3(0.1f, 0.1f, 0.1f));
-	//glBindTexture(GL_TEXTURE_2D, idTexNone);
-	//vase.render(0, m);
+	m = matrixView;
+	m = translate(m, vec3(0.0f, 3.04f, 0.0f));
+	m = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
+	vase.render(0, m);*/
 
 	// setup materials - blue
 	program.sendUniform("materialDiffuse", vec3(0.2f, 0.2f, 0.8f));
@@ -388,13 +388,13 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
 
 	// teapot
-	//m = matrixView;
-	//m = translate(m, vec3(1.5f, 3.36f, 0.5f));
-	//m = rotate(m, radians(320.f), vec3(0.0f, 1.0f, 0.0f));
-	//m = scale(m, vec3(0.2f, 0.2f, 0.2f));
-	//// the GLUT objects require the Model View Matrix setup
-	//program.sendUniform("matrixModelView", m);
-	//glutSolidTeapot(2.0);
+	m = matrixView;
+	m = translate(m, vec3(1.5f, 3.36f, 0.5f));
+	m = rotate(m, radians(320.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
+	// the GLUT objects require the Model View Matrix setup
+	program.sendUniform("matrixModelView", m);
+	glutSolidTeapot(2.0);
 
 	// pyramid
 	m = matrixView;
@@ -441,20 +441,20 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glDisableVertexAttribArray(attribNormal);
 
 
-	//program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
-	//program.sendUniform("materialDiffuse", vec3(0.2f, 0.5f, 0.1f));
-	//program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
-	//glBindTexture(GL_TEXTURE_2D, idTexNone);
-	//// bunny
-	//m = matrixView;
+	program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
+	program.sendUniform("materialDiffuse", vec3(0.2f, 0.5f, 0.1f));
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
+	// bunny
+	m = matrixView;
 
-	//m = translate(m, vec3(-1.5f, 3.55f, 0.5f));
+	m = translate(m, vec3(-1.5f, 3.55f, 0.5f));
 
-	//m = rotate(m, radians(pyramidRotation), vec3(0.0f, -1.0f, 0.0f));
+	m = rotate(m, radians(pyramidRotation), vec3(0.0f, -1.0f, 0.0f));
 
-	//m = scale(m, vec3(4.0f, 4.0f, 4.0f));
+	m = scale(m, vec3(4.0f, 4.0f, 4.0f));
 
-	//bunny.render(0, m);
+	bunny.render(0, m);
 }
 
 //----------------------------------
@@ -517,7 +517,7 @@ void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
 void renderReflectiveObjects(mat4 matrixView, float time, float deltaTime)
 {
 	mat4 m;
-	program.sendUniform("reflectionPower", 0.5);  // Enable reflections
+	program.sendUniform("reflectionPower", 1.0f);  // Enable reflections
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
 
@@ -531,33 +531,7 @@ void renderReflectiveObjects(mat4 matrixView, float time, float deltaTime)
 	program.sendUniform("matrixModelView", m);
 	vase.render(0, m);
 
-	// setup materials - blue
-	program.sendUniform("materialDiffuse", vec3(0.2f, 0.2f, 0.8f));
-	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
-
-	// teapot
-	m = matrixView;
-	m = translate(m, vec3(1.5f, 3.36f, 0.5f));
-	m = rotate(m, radians(320.f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
-	program.sendUniform("matrixModelView", m);
-	glutSolidTeapot(2.0);
-
-	// setup materials - bunny
-	program.sendUniform("materialDiffuse", vec3(0.2f, 0.5f, 0.1f));
-	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
-	// bunny
-	m = matrixView;
-
-	m = translate(m, vec3(-1.5f, 3.55f, 0.5f));
-
-	m = rotate(m, radians(pyramidRotation), vec3(0.0f, -1.0f, 0.0f));
-
-	m = scale(m, vec3(4.0f, 4.0f, 4.0f));
-	program.sendUniform("matrixModelView", m);
-	bunny.render(0, m);
-
-	program.sendUniform("reflectionPower", 0.0); //Disable reflections
+	program.sendUniform("reflectionPower", 0.0f); //Disable reflections
 }
 
 //----------------------------------
