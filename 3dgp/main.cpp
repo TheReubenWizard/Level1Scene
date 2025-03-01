@@ -472,6 +472,13 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	// ---------------- SPOTLIGHT START ------------------------
 
+	static float alpha = 0;                        // angular position (swing)
+	static float omega = 1.8f;                   // angular velocity
+	deltaTime = glm::min(deltaTime, 0.2f);        // remove time distortions (longer than 0.2s)
+	omega -= alpha * 0.05f * deltaTime;        // Hooke's law: acceleration proportional to swing
+	alpha += omega * deltaTime * 5;                // motion equation: swing += velocity * delta-time
+
+
 	lightSpot.position = glm::vec3(-1.4f, 5.5f, 0.0f);
 	lightSpot.direction = glm::vec3(0.0f, -1.0f, 0.0f);
 	lightSpot.diffuse = glm::vec3(0.5f, 0.5f, 0.0f);
@@ -486,14 +493,6 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("lightSpot.specular", lightSpot.specular);
 	program.sendUniform("lightSpot.cutoff", lightSpot.cutoff);
 	program.sendUniform("lightSpot.attenuation", lightSpot.attenuation);
-
-
-
-	static float alpha = 0;                        // angular position (swing)
-	static float omega = 1.8f;                   // angular velocity
-	deltaTime = glm::min(deltaTime, 0.2f);        // remove time distortions (longer than 0.2s)
-	omega -= alpha * 0.05f * deltaTime;        // Hooke's law: acceleration proportional to swing
-	alpha += omega * deltaTime * 5;                // motion equation: swing += velocity * delta-time
 
 
 	// ceiling lamp
