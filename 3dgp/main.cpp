@@ -27,6 +27,7 @@ C3dglModel vase;
 C3dglModel bunny;
 C3dglModel lamp1;
 C3dglModel lamp2;
+C3dglModel ceilingLamp;
 
 // The View Matrix
 mat4 matrixView;
@@ -161,6 +162,7 @@ bool init()
 	if (!bunny.load("models\\bunny.obj")) return false;
 	if (!lamp1.load("models\\lamp.obj")) return false;
 	if (!lamp2.load("models\\lamp.obj")) return false;
+	if (!ceilingLamp.load("models\\ceilinglamp.3ds")) return false;
 
 
 	// Initialise the View Matrix (initial position of the camera)
@@ -245,21 +247,6 @@ bool init()
 
 	//DO NOT LOAD BITMAPS IN HERE, WILL RENDER TO THE TEXTURE
 
-
-	lightSpot.position = glm::vec3(-1.0f, 10.0f, 0.0f);
-	lightSpot.direction = glm::vec3(0.0f, -1.0f, 0.0f);
-	lightSpot.diffuse = glm::vec3(0.5f, 0.5f, 0.0f);
-	lightSpot.specular = glm::vec3(1.0f, 1.0f, 0.0f);
-	lightSpot.cutoff = 30.0f;
-	lightSpot.attenuation = 5.0f;
-
-	// Send spotlight info to shaders
-	program.sendUniform("lightSpot.position", lightSpot.position);
-	program.sendUniform("lightSpot.direction", lightSpot.direction);
-	program.sendUniform("lightSpot.diffuse", lightSpot.diffuse);
-	program.sendUniform("lightSpot.specular", lightSpot.specular);
-	program.sendUniform("lightSpot.cutoff", lightSpot.cutoff);
-	program.sendUniform("lightSpot.attenuation", lightSpot.attenuation);
 
 // Send the cube map info to the shaders
 	program.sendUniform("textureCubeMap", 1);
@@ -482,6 +469,22 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	bunny.render(0, m);
 
+
+	lightSpot.position = glm::vec3(-1.4f, 6.0f, 0.0f);
+	lightSpot.direction = glm::vec3(0.0f, -1.0f, 0.0f);
+	lightSpot.diffuse = glm::vec3(0.5f, 0.5f, 0.0f);
+	lightSpot.specular = glm::vec3(1.0f, 1.0f, 0.0f);
+	lightSpot.cutoff = 30.0f;
+	lightSpot.attenuation = 20.0f;
+
+	// Send spotlight info to shaders
+	program.sendUniform("lightSpot.position", lightSpot.position);
+	program.sendUniform("lightSpot.direction", lightSpot.direction);
+	program.sendUniform("lightSpot.diffuse", lightSpot.diffuse);
+	program.sendUniform("lightSpot.specular", lightSpot.specular);
+	program.sendUniform("lightSpot.cutoff", lightSpot.cutoff);
+	program.sendUniform("lightSpot.attenuation", lightSpot.attenuation);
+
 	// Spotlight representation - a yellow sphere
 	m = matrixView;
 	m = translate(m, lightSpot.position);
@@ -491,7 +494,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 0.0f)); // Yellow
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
-	glutSolidSphere(1, 32, 32);
+	glutSolidSphere(1, 16, 16);
 }
 
 //----------------------------------

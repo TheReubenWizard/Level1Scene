@@ -114,8 +114,9 @@ vec4 SpotLight(SPOT light)
     // Calculate the light vector (direction from fragment to light)
     vec3 lightVec = normalize(lightPositionViewSpace.xyz - position.xyz);
 
-    // Calculate the cosine of the angle between the light vector and the spotlight direction
-    float spotFactor = dot(-lightVec, spotDir);
+    //This is the spot factor
+	float spotFactor = dot(-lightVec, spotDir);
+
 
     // Calculate the cutoff angle in cosine space
     float cutoffAngle = cos(radians(light.cutoff));
@@ -123,16 +124,17 @@ vec4 SpotLight(SPOT light)
     // Check if the fragment is within the spotlight cone
     if (spotFactor > cutoffAngle) {
         // Calculate the NdotL factor
-        float NdotL = dot(normal, -lightVec); // Use -lightVec
+		float NdotL = dot(normal, lightVec);
+
         color += vec4(materialDiffuse * light.diffuse, 1.0) * max(NdotL, 0.0);
 
         // Specular Calculation:
         vec3 V = normalize(-position.xyz);
-        vec3 R = reflect(lightVec, normal);
+        vec3 R = reflect(-lightVec, normal); // Use -lightVec
         float RdotV = dot(R, V);
         color += vec4(materialSpecular * light.specular, 1.0) * pow(max(RdotV, 0.0), shininess);
 
-        // Attenuation
+        // Attenuation - this needs to be better
         spotFactor = pow(spotFactor, light.attenuation);
         color *= spotFactor;
     } else {
