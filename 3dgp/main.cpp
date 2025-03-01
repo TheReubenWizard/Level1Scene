@@ -51,6 +51,16 @@ bool lamp2On = true;
 float lightIntensity1 = 1.0;
 float lightIntensity2 = 1.0;
 
+struct SpotLight {
+	glm::vec3 position;
+	glm::vec3 direction;
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+	float cutoff;
+	float attenuation;
+};
+SpotLight lightSpot;
+
 // Texture IDs
 GLuint idTexWood;
 GLuint idTexNone;
@@ -233,7 +243,23 @@ bool init()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	//DO NOT LOAD BITMAPS IN HERE, WE WILL RENDER TO THE TEXTURE
+	//DO NOT LOAD BITMAPS IN HERE, WILL RENDER TO THE TEXTURE
+
+
+	lightSpot.position = glm::vec3(-1.0f, 10.0f, 0.0f);
+	lightSpot.direction = glm::vec3(0.0f, -1.0f, 0.0f);
+	lightSpot.diffuse = glm::vec3(0.5f, 0.5f, 0.0f);
+	lightSpot.specular = glm::vec3(1.0f, 1.0f, 0.0f);
+	lightSpot.cutoff = 30.0f;
+	lightSpot.attenuation = 5.0f;
+
+	// Send spotlight info to shaders
+	program.sendUniform("lightSpot.position", lightSpot.position);
+	program.sendUniform("lightSpot.direction", lightSpot.direction);
+	program.sendUniform("lightSpot.diffuse", lightSpot.diffuse);
+	program.sendUniform("lightSpot.specular", lightSpot.specular);
+	program.sendUniform("lightSpot.cutoff", lightSpot.cutoff);
+	program.sendUniform("lightSpot.attenuation", lightSpot.attenuation);
 
 // Send the cube map info to the shaders
 	program.sendUniform("textureCubeMap", 1);
@@ -455,6 +481,17 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(4.0f, 4.0f, 4.0f));
 
 	bunny.render(0, m);
+
+	// Spotlight representation - a yellow sphere
+	m = matrixView;
+	m = translate(m, lightSpot.position);
+	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+	program.sendUniform("matrixModelView", m);
+
+	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 0.0f)); // Yellow
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
+	glutSolidSphere(1, 32, 32);
 }
 
 //----------------------------------

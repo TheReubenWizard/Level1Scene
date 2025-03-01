@@ -20,6 +20,17 @@ struct POINT
 uniform POINT lightPoint1;
 uniform POINT lightPoint2;
 
+struct SPOT
+{
+    vec3 position;
+    vec3 direction;
+    vec3 diffuse;
+    vec3 specular;
+    float cutoff;
+    float attenuation;
+};
+uniform SPOT lightSpot;
+
 uniform float lightIntensity1;
 uniform float lightIntensity2;
 
@@ -90,6 +101,47 @@ vec4 PointLight(POINT light, float intensity)
     return color;
 }
 
+// Calculates the spot light of an object
+vec4 SpotLight(SPOT light)
+{
+    // Calculate Spot Light
+    vec4 color = vec4(0, 0, 0, 0);
+
+    // Transform the light position and direction to view space
+    vec4 lightPositionViewSpace = matrixView * vec4(light.position, 1.0);
+    vec3 spotDir = normalize(mat3(matrixView) * light.direction);
+
+    // Calculate the light vector (direction from fragment to light)
+    vec3 lightVec = normalize(lightPositionViewSpace.xyz - position.xyz);
+
+    // Calculate the cosine of the angle between the light vector and the spotlight direction
+    float spotFactor = dot(-lightVec, spotDir);
+
+    // Calculate the cutoff angle in cosine space
+    float cutoffAngle = cos(radians(light.cutoff));
+
+    // Check if the fragment is within the spotlight cone
+    if (spotFactor > cutoffAngle) {
+        // Calculate the NdotL factor
+        float NdotL = dot(normal, -lightVec); // Use -lightVec
+        color += vec4(materialDiffuse * light.diffuse, 1.0) * max(NdotL, 0.0);
+
+        // Specular Calculation:
+        vec3 V = normalize(-position.xyz);
+        vec3 R = reflect(lightVec, normal);
+        float RdotV = dot(R, V);
+        color += vec4(materialSpecular * light.specular, 1.0) * pow(max(RdotV, 0.0), shininess);
+
+        // Attenuation
+        spotFactor = pow(spotFactor, light.attenuation);
+        color *= spotFactor;
+    } else {
+        return vec4(0.0); // Outside the spotlight cone, return black
+    }
+
+    return color;
+}
+
 void main(void) 
 {
     outColor = vec4(0,0,0,0);
@@ -97,6 +149,7 @@ void main(void)
 	outColor += DirectionalLight(lightDir);
     outColor += PointLight(lightPoint1, lightIntensity1);
     outColor += PointLight(lightPoint2, lightIntensity2);
+    outColor += SpotLight(lightSpot);
     
     // Apply texture to the output
 	outColor *= texture(texture0, texCoord0);
