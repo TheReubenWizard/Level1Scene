@@ -470,7 +470,9 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	bunny.render(0, m);
 
 
-	lightSpot.position = glm::vec3(-1.4f, 6.0f, 0.0f);
+	// ---------------- SPOTLIGHT START ------------------------
+
+	lightSpot.position = glm::vec3(-1.4f, 5.5f, 0.0f);
 	lightSpot.direction = glm::vec3(0.0f, -1.0f, 0.0f);
 	lightSpot.diffuse = glm::vec3(0.5f, 0.5f, 0.0f);
 	lightSpot.specular = glm::vec3(1.0f, 1.0f, 0.0f);
@@ -485,6 +487,8 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("lightSpot.cutoff", lightSpot.cutoff);
 	program.sendUniform("lightSpot.attenuation", lightSpot.attenuation);
 
+
+
 	// Spotlight representation - a yellow sphere
 	m = matrixView;
 	m = translate(m, lightSpot.position);
@@ -493,8 +497,23 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 0.0f)); // Yellow
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+
+	program.sendUniform("lightAmbient.color", vec3(1.0f, 1.0f, 0.0f));
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
-	glutSolidSphere(1, 16, 16);
+	glutSolidSphere(1, 12, 12); // bulb for spot light
+	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
+
+	m = matrixView;
+	m = translate(m, lightSpot.position + vec3(0,1.97f,0));
+	m = scale(m, vec3(0.02f, 0.02f, 0.02f));
+	program.sendUniform("materialDiffuse", vec3(0.5f, 1.0f, 0.5f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
+	ceilingLamp.render(0, m);
+
+	// ---------------------------- SPOTLIGHT END -----------------------------
+
+
 }
 
 //----------------------------------
