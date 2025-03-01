@@ -80,6 +80,35 @@ void onMouse(int button, int state, int x, int y);
 void onMotion(int x, int y);
 void onMouseWheel(int button, int dir, int x, int y);
 
+
+glm::vec3 hsvToRgb(float h, float s, float v) {
+	h = fmod(h, 360.0f); // Ensure hue is within 0-360
+	if (h < 0.0f)
+		h += 360.0f;
+
+	float c = v * s;
+	float x = c * (1.0f - std::abs(fmod(h / 60.0f, 2.0f) - 1.0f));
+	float m = v - c;
+
+	glm::vec3 rgb(0.0f);
+
+	if (h >= 0 && h < 60)
+		rgb = glm::vec3(c, x, 0);
+	else if (h >= 60 && h < 120)
+		rgb = glm::vec3(x, c, 0);
+	else if (h >= 120 && h < 180)
+		rgb = glm::vec3(0, c, x);
+	else if (h >= 180 && h < 240)
+		rgb = glm::vec3(0, x, c);
+	else if (h >= 240 && h < 300)
+		rgb = glm::vec3(x, 0, c);
+	else if (h >= 300 && h < 360)
+		rgb = glm::vec3(c, 0, x);
+
+	return rgb + glm::vec3(m);
+}
+
+
 int main(int argc, char** argv)
 {
 	// init GLUT and create Window
@@ -470,6 +499,16 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	bunny.render(0, m);
 
 
+	static float prev = 0;
+	float time2 = glutGet(GLUT_ELAPSED_TIME) * 0.001f;	// time since start in seconds
+	float deltaTime2 = time2 - prev;						// time since last frame
+	prev = time2;										// framerate is 1/deltaTime
+
+	// --- Disco Light Color Calculation ---
+	float hue = time2 * 60.0f;  // Change hue over time (adjust speed as needed)
+	glm::vec3 discoColor = hsvToRgb(hue, 1.0f, 1.0f); // Full saturation and value
+
+
 	// ---------------- SPOTLIGHT START ------------------------
 
 	static float alpha = 0;                        // angular position (swing)
@@ -478,9 +517,8 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	omega -= alpha * 0.05f * deltaTime;        // Hooke's law: acceleration proportional to swing
 	alpha += omega * deltaTime * 5;                // motion equation: swing += velocity * delta-time
 
-
 	lightSpot.position = glm::vec3(-1.4f, 5.5f, 0.0f);
-	lightSpot.direction = glm::vec3(0.0f, -1.0f, 0.0f);
+	lightSpot.direction = glm::vec3(radians(alpha), -1.0f + radians(alpha), -radians(alpha));
 	lightSpot.diffuse = glm::vec3(0.5f, 0.5f, 0.0f);
 	lightSpot.specular = glm::vec3(1.0f, 1.0f, 0.0f);
 	lightSpot.cutoff = 30.0f;
@@ -489,7 +527,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	// Send spotlight info to shaders
 	program.sendUniform("lightSpot.position", lightSpot.position);
 	program.sendUniform("lightSpot.direction", lightSpot.direction);
-	program.sendUniform("lightSpot.diffuse", lightSpot.diffuse);
+	program.sendUniform("lightSpot.diffuse", discoColor);
 	program.sendUniform("lightSpot.specular", lightSpot.specular);
 	program.sendUniform("lightSpot.cutoff", lightSpot.cutoff);
 	program.sendUniform("lightSpot.attenuation", lightSpot.attenuation);
@@ -512,10 +550,10 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(3.0f, 3.0f, 3.0f));
 	program.sendUniform("matrixModelView", m);
 
-	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 0.0f)); // Yellow
+	program.sendUniform("materialDiffuse", vec3(discoColor));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
 
-	program.sendUniform("lightAmbient.color", vec3(1.0f, 1.0f, 0.0f));
+	program.sendUniform("lightAmbient.color", vec3(discoColor));
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	glutSolidSphere(1, 12, 12); // bulb for spot light
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
