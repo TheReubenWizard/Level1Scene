@@ -477,7 +477,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	lightSpot.diffuse = glm::vec3(0.5f, 0.5f, 0.0f);
 	lightSpot.specular = glm::vec3(1.0f, 1.0f, 0.0f);
 	lightSpot.cutoff = 30.0f;
-	lightSpot.attenuation = 20.0f;
+	lightSpot.attenuation = 15.0f;
 
 	// Send spotlight info to shaders
 	program.sendUniform("lightSpot.position", lightSpot.position);
@@ -489,10 +489,28 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 
 
-	// Spotlight representation - a yellow sphere
+	static float alpha = 0;                        // angular position (swing)
+	static float omega = 1.8f;                   // angular velocity
+	deltaTime = glm::min(deltaTime, 0.2f);        // remove time distortions (longer than 0.2s)
+	omega -= alpha * 0.05f * deltaTime;        // Hooke's law: acceleration proportional to swing
+	alpha += omega * deltaTime * 5;                // motion equation: swing += velocity * delta-time
+
+
+	// ceiling lamp
 	m = matrixView;
-	m = translate(m, lightSpot.position);
-	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+	m = translate(m, lightSpot.position + vec3(0, 1.97f, 0));
+	m = rotate(m, radians(alpha), vec3(0.5, 0, 1));
+	m = scale(m, vec3(0.02f, 0.02f, 0.02f));
+	program.sendUniform("materialDiffuse", vec3(0.5f, 1.0f, 0.5f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
+	ceilingLamp.render(0, m);
+
+
+	// Spotlight representation - a yellow sphere
+	m = translate(m, vec3(0,-103.0f,0));
+	//m = rotate(m, radians(alpha), vec3(0.5, 0, 1));
+	m = scale(m, vec3(3.0f, 3.0f, 3.0f));
 	program.sendUniform("matrixModelView", m);
 
 	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 0.0f)); // Yellow
@@ -503,13 +521,6 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glutSolidSphere(1, 12, 12); // bulb for spot light
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 
-	m = matrixView;
-	m = translate(m, lightSpot.position + vec3(0,1.97f,0));
-	m = scale(m, vec3(0.02f, 0.02f, 0.02f));
-	program.sendUniform("materialDiffuse", vec3(0.5f, 1.0f, 0.5f));
-	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.0f));
-	glBindTexture(GL_TEXTURE_2D, idTexNone);
-	ceilingLamp.render(0, m);
 
 	// ---------------------------- SPOTLIGHT END -----------------------------
 
