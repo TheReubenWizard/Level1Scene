@@ -505,7 +505,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	prev = time2;										// framerate is 1/deltaTime
 
 	// --- Disco Light Color Calculation ---
-	float hue = time2 * 60.0f;  // Change hue over time (adjust speed as needed)
+	float hue = time2 * 60.0f;  // Change hue over time
 	glm::vec3 discoColor = hsvToRgb(hue, 1.0f, 1.0f); // Full saturation and value
 
 
