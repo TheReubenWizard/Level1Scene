@@ -3,6 +3,7 @@
 uniform mat4 matrixProjection;
 uniform mat4 matrixModelView;
 uniform mat4 matrixView;
+uniform mat4 matrixShadow;
 
 // Materials
 uniform vec3 materialAmbient;
@@ -20,7 +21,8 @@ out vec4 color;
 out vec4 position;
 out vec3 normal;
 out vec2 texCoord0;
-out vec3 texCoordCubeMap; // NEW - Cube Map TexCoord
+out vec3 texCoordCubeMap;
+out vec4 shadowCoord;
 
 void main(void) 
 {
@@ -34,4 +36,8 @@ void main(void)
 	
 	// calculate reflection vector
 	texCoordCubeMap = inverse(mat3(matrixView)) * reflect(position.xyz, normal);
+
+	// Calculate shadow coordinate – using the Shadow Matrix
+    mat4 matrixModel = inverse(matrixView) * matrixModelView;
+    shadowCoord = matrixShadow * matrixModel * vec4(aVertex + aNormal * 0.01, 1); // Add bias
 }

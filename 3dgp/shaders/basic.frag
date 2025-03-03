@@ -10,6 +10,7 @@ uniform float shininess;
 
 // View Matrix
 uniform mat4 matrixView;
+uniform mat4 matrixLightView;
 
 struct POINT
 {
@@ -62,6 +63,11 @@ uniform sampler2D texture0; // Sampler for the texture
 in vec3 texCoordCubeMap; // in variable
 uniform samplerCube textureCubeMap;
 uniform float reflectionPower;
+
+
+in vec4 shadowCoord;
+uniform sampler2DShadow shadowMap;
+
 
 // Calculates the ambient light of an object
 vec4 AmbientLight(AMBIENT light)
@@ -153,9 +159,17 @@ void main(void)
     outColor += PointLight(lightPoint2, lightIntensity2);
     outColor += SpotLight(lightSpot);
     
+
+    // Calculation of the shadow
+    float shadow = 1.0;
+    if (shadowCoord.w > 0)        // if shadowCoord.w < 0 fragment is out of the Light POV
+        shadow = textureProj(shadowMap, shadowCoord - vec4(0.0, 0.0, 0.001, 0.0)); //Apply bias
+
     // Apply texture to the output
-	outColor *= texture(texture0, texCoord0);
+    outColor *= texture(texture0, texCoord0);
+    outColor *= shadow; // Apply the shadow
 	
+
 	// Fresnel Calculation and Reflection:
 	float F0 = 0.3; // Typical value for dielectrics
 	vec3 V = normalize(-position.xyz);  // View direction

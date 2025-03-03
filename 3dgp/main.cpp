@@ -16,6 +16,8 @@ using namespace glm;
 
 // Global Variables
 GLuint idTexCube; // global variable for cubemap
+GLuint idTexShadowMap; // global variable for shadow map texture
+GLuint idFBO; // global variable for the frame buffer object
 
 // GLSL Program
 C3dglProgram program;
@@ -180,6 +182,7 @@ bool init()
 	// rendering states
 	glEnable(GL_DEPTH_TEST);    // depth test is necessary for most 3D scenes
 	glEnable(GL_NORMALIZE);        // normalization is needed by AssImp library models
+	glEnable(GL_CULL_FACE);
 	glShadeModel(GL_SMOOTH);    // smooth shading mode is the default one; try GL_FLAT here!
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);    // this is the default one; try GL_LINE!
 
@@ -277,6 +280,50 @@ bool init()
 	//DO NOT LOAD BITMAPS IN HERE, WILL RENDER TO THE TEXTURE
 
 
+	// Shadow Mapping Initialization START
+	glActiveTexture(GL_TEXTURE7);
+	glGenTextures(1, &idTexShadowMap);
+	glBindTexture(GL_TEXTURE_2D, idTexShadowMap);
+
+	// Texture parameters - to get nice filtering & avoid artefact on the edges of the shadowmap
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+
+	// This will associate the texture with the depth component in the Z-buffer
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	int w = viewport[2], h = viewport[3];
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w * 2, h * 2, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
+	// Send the texture info to the shaders
+	program.sendUniform("shadowMap", 7);
+
+	// revert to texture unit 0
+	glActiveTexture(GL_TEXTURE0);
+	// Shadow Mapping Initialization END
+
+
+	// Framebuffer Object (FBO) Initialization START
+	glGenFramebuffers(1, &idFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER_EXT, idFBO);
+
+	// Instruct openGL that we won't bind a color texture with the currently binded FBO
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+
+	// attach the texture to FBO depth attachment point
+	glFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, idTexShadowMap, 0);
+
+	// switch back to window-system-provided framebuffer
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	// Framebuffer Object (FBO) Initialization END
+
+
+
 // Send the cube map info to the shaders
 	program.sendUniform("textureCubeMap", 1);
 
@@ -291,6 +338,63 @@ bool init()
 
 	return true;
 }
+
+
+// Creates a shadow map and stores in idTexShadowMap
+// lightTransform - lookAt transform corresponding to the light position and predominant direction
+void createShadowMap(mat4 lightTransform, float time, float deltaTime)
+{
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+
+	// Store the current viewport in a safe place
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	int w = viewport[2], h = viewport[3];
+
+	// setup the viewport to 2x2 the original and wide (160 degrees) FoV (Field of View)
+	glViewport(0, 0, w * 2, h * 2);
+	mat4 matrixProjection = perspective(radians(160.f), (float)w / (float)h, 0.5f, 50.0f);
+	program.sendUniform("matrixProjection", matrixProjection);
+
+	// prepare the camera
+	mat4 matrixView = lightTransform;
+
+	// send the View Matrix
+	program.sendUniform("matrixView", matrixView);
+
+	// Bind the Framebuffer
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, idFBO);
+	// OFF-SCREEN RENDERING FROM NOW!
+
+	// Clear previous frame values - depth buffer only!
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	// Disable color rendering, we only want to write to the Z-Buffer (this is to speed-up)
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	// Prepare and send the Shadow Matrix - this is matrix transform every coordinate x,y,z
+	// x = x* 0.5 + 0.5
+	// y = y* 0.5 + 0.5
+	// z = z* 0.5 + 0.5
+	// Moving from unit cube [-1,1] to [0,1]
+	const mat4 bias = {
+			{ 0.5, 0.0, 0.0, 0.0 },
+			{ 0.0, 0.5, 0.0, 0.0 },
+			{ 0.0, 0.0, 0.5, 0.0 },
+			{ 0.5, 0.5, 0.5, 1.0 }
+	};
+	program.sendUniform("matrixShadow", bias * matrixProjection * matrixView);
+
+	// Render all objects in the scene
+	renderScene(matrixView, time, deltaTime);
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glDisable(GL_CULL_FACE);
+	onReshape(w, h);
+}
+
 
 void renderScene(mat4& matrixView, float time, float deltaTime)
 {
@@ -429,14 +533,15 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 1.0f));
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
 
-	// teapot
+	// teapot (with culling fix)
 	m = matrixView;
 	m = translate(m, vec3(1.5f, 3.36f, 0.5f));
 	m = rotate(m, radians(320.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
-	// the GLUT objects require the Model View Matrix setup
 	program.sendUniform("matrixModelView", m);
+	glFrontFace(GL_CW);  // Temporarily set front face to clockwise
 	glutSolidTeapot(2.0);
+	glFrontFace(GL_CCW); // Restore the default counter-clockwise front face
 
 	// pyramid
 	m = matrixView;
@@ -505,7 +610,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	prev = time2;										// framerate is 1/deltaTime
 
 	// --- Disco Light Color Calculation ---
-	float hue = time2 * 60.0f;  // Change hue over time
+	float hue = time2 * 60.0f;  // Change hue over time (adjust speed as needed)
 	glm::vec3 discoColor = hsvToRgb(hue, 1.0f, 1.0f); // Full saturation and value
 
 
@@ -652,6 +757,17 @@ void onRender()
 	float time = glutGet(GLUT_ELAPSED_TIME) * 0.001f;	// time since start in seconds
 	float deltaTime = time - prev;						// time since last frame
 	prev = time;										// framerate is 1/deltaTime
+
+
+	// Setup Light Transform (position of the light, look at the center of the scene)
+	mat4 lightTransform = lookAt(
+		vec3(-1.95f, 4.24f, -1.0f),         // coordinates of the source of the light
+		vec3(0.0f, 3.0f, 0.0f),                 // coordinates of a point within or behind the scene
+		vec3(0.0f, 1.0f, 0.0f));                // a reasonable "Up" vector
+
+	// Create the shadow map
+	createShadowMap(lightTransform, time, deltaTime);
+
 
 	float cubeMapX = 0.0f;  // X coordinate for cube map center
 	float cubeMapY = 4.2f;  // Y coordinate for cube map center
