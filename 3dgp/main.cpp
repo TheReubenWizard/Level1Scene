@@ -648,7 +648,6 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	ceilingLamp.render(0, m);
 
-
 	// Spotlight representation - a yellow sphere
 	m = translate(m, vec3(0,-103.0f,0));
 	//m = rotate(m, radians(alpha), vec3(0.5, 0, 1));
@@ -742,7 +741,7 @@ void renderReflectiveObjects(mat4 matrixView, float time, float deltaTime)
 	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
 	program.sendUniform("matrixModelView", m);
 	vase.render(0, m);
-
+	
 	program.sendUniform("reflectionPower", 0.0f); //Disable reflections
 }
 
@@ -761,13 +760,10 @@ void onRender()
 
 	// Setup Light Transform (position of the light, look at the center of the scene)
 	mat4 lightTransform = lookAt(
-		vec3(-1.95f, 4.24f, -1.0f),         // coordinates of the source of the light
+		vec3(-1.4f, 5.5f, 0.0f),         // coordinates of the source of the light
 		vec3(0.0f, 3.0f, 0.0f),                 // coordinates of a point within or behind the scene
 		vec3(0.0f, 1.0f, 0.0f));                // a reasonable "Up" vector
-
-	// Create the shadow map
 	createShadowMap(lightTransform, time, deltaTime);
-
 
 	float cubeMapX = 0.0f;  // X coordinate for cube map center
 	float cubeMapY = 4.2f;  // Y coordinate for cube map center
