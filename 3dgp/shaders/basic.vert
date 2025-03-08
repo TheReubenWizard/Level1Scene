@@ -39,5 +39,5 @@ void main(void)
 
 	// Calculate shadow coordinate – using the Shadow Matrix
     mat4 matrixModel = inverse(matrixView) * matrixModelView;
-    shadowCoord = matrixShadow * matrixModel * vec4(aVertex + aNormal * 0.01, 1); // Add bias
+    shadowCoord = matrixShadow * matrixModel * vec4(aVertex + aNormal * 20, 1); // Add bias
 }

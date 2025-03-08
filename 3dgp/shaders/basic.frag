@@ -60,7 +60,7 @@ uniform sampler2D texture0; // Sampler for the texture
 // TEXTURE END
 
 // Environment Mapping 
-in vec3 texCoordCubeMap; // in variable
+in vec3 texCoordCubeMap; 
 uniform samplerCube textureCubeMap;
 uniform float reflectionPower;
 
@@ -117,10 +117,10 @@ vec4 SpotLight(SPOT light)
     vec4 lightPositionViewSpace = matrixView * vec4(light.position, 1.0);
     vec3 spotDir = normalize(mat3(matrixView) * light.direction);
 
-    // Calculate the light vector (direction from fragment to light)
+    
     vec3 lightVec = normalize(lightPositionViewSpace.xyz - position.xyz);
 
-    //This is the spot factor
+    
 	float spotFactor = dot(-lightVec, spotDir);
 
 
@@ -136,7 +136,7 @@ vec4 SpotLight(SPOT light)
 
         // Specular Calculation:
         vec3 V = normalize(-position.xyz);
-        vec3 R = reflect(-lightVec, normal); // Use -lightVec
+        vec3 R = reflect(-lightVec, normal);
         float RdotV = dot(R, V);
         color += vec4(materialSpecular * light.specular, 1.0) * pow(max(RdotV, 0.0), shininess);
 
@@ -171,7 +171,7 @@ void main(void)
 	
 
 	// Fresnel Calculation and Reflection:
-	float F0 = 0.3; // Typical value for dielectrics
+	float F0 = 0.3;
 	vec3 V = normalize(-position.xyz);  // View direction
 	float NdotV = max(dot(normal, V), 0.0); // Clamp to avoid negative values
 	float fresnel = F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);

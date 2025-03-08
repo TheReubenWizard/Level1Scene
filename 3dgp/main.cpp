@@ -4,7 +4,6 @@
 #include <GL/glut.h>
 #include <GL/freeglut_ext.h>
 
-// Include GLM core features
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -15,9 +14,9 @@ using namespace _3dgl;
 using namespace glm;
 
 // Global Variables
-GLuint idTexCube; // global variable for cubemap
-GLuint idTexShadowMap; // global variable for shadow map texture
-GLuint idFBO; // global variable for the frame buffer object
+GLuint idTexCube;
+GLuint idTexShadowMap;
+GLuint idFBO;
 
 // GLSL Program
 C3dglProgram program;
@@ -84,7 +83,7 @@ void onMouseWheel(int button, int dir, int x, int y);
 
 
 glm::vec3 hsvToRgb(float h, float s, float v) {
-	h = fmod(h, 360.0f); // Ensure hue is within 0-360
+	h = fmod(h, 360.0f); //ensure hue is within 0-360
 	if (h < 0.0f)
 		h += 360.0f;
 
@@ -277,7 +276,7 @@ bool init()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	//DO NOT LOAD BITMAPS IN HERE, WILL RENDER TO THE TEXTURE
+	//don't load bitmaps here
 
 
 	// Shadow Mapping Initialization START
@@ -373,11 +372,7 @@ void createShadowMap(mat4 lightTransform, float time, float deltaTime)
 	// Disable color rendering, we only want to write to the Z-Buffer (this is to speed-up)
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-	// Prepare and send the Shadow Matrix - this is matrix transform every coordinate x,y,z
-	// x = x* 0.5 + 0.5
-	// y = y* 0.5 + 0.5
-	// z = z* 0.5 + 0.5
-	// Moving from unit cube [-1,1] to [0,1]
+	// Prepare and send the Shadow Matrix
 	const mat4 bias = {
 			{ 0.5, 0.0, 0.0, 0.0 },
 			{ 0.0, 0.5, 0.0, 0.0 },
@@ -535,7 +530,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	// teapot (with culling fix)
 	m = matrixView;
-	m = translate(m, vec3(1.5f, 3.36f, 0.5f));
+	m = translate(m, vec3(1.5f, 3.33f, 0.5f));
 	m = rotate(m, radians(320.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
 	program.sendUniform("matrixModelView", m);
@@ -610,7 +605,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	prev = time2;										// framerate is 1/deltaTime
 
 	// --- Disco Light Color Calculation ---
-	float hue = time2 * 60.0f;  // Change hue over time (adjust speed as needed)
+	float hue = time2 * 60.0f;  //Change hue over time, speed can be changed
 	glm::vec3 discoColor = hsvToRgb(hue, 1.0f, 1.0f); // Full saturation and value
 
 
@@ -648,7 +643,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	ceilingLamp.render(0, m);
 
-	// Spotlight representation - a yellow sphere
+	
 	m = translate(m, vec3(0,-103.0f,0));
 	//m = rotate(m, radians(alpha), vec3(0.5, 0, 1));
 	m = scale(m, vec3(3.0f, 3.0f, 3.0f));
@@ -680,7 +675,7 @@ void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
 	int w = viewport[2];
 	int h = viewport[3];
 
-	// setup the viewport to 256x256, 90 degrees FoV (Field of View)
+	// setup the viewport to 256x256, 90 degrees fov
 	glViewport(0, 0, 256, 256);
 	program.sendUniform("matrixProjection", perspective(radians(90.f), 1.0f, 0.02f, 1000.0f));
 
@@ -725,7 +720,7 @@ void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
 	program.sendUniform("matrixProjection", matrixProjection);
 }
 
-void renderReflectiveObjects(mat4 matrixView, float time, float deltaTime)
+void renderVase(mat4 matrixView, float time, float deltaTime)
 {
 	mat4 m;
 	program.sendUniform("reflectionPower", 0.9f);  // Enable reflections
@@ -758,16 +753,16 @@ void onRender()
 	prev = time;										// framerate is 1/deltaTime
 
 
-	// Setup Light Transform (position of the light, look at the center of the scene)
+	// Setup Light Transform
 	mat4 lightTransform = lookAt(
-		vec3(-1.4f, 5.5f, 0.0f),         // coordinates of the source of the light
-		vec3(0.0f, 3.0f, 0.0f),                 // coordinates of a point within or behind the scene
-		vec3(0.0f, 1.0f, 0.0f));                // a reasonable "Up" vector
+		vec3(-1.4f, 5.5f, 0.0f),  
+		vec3(0.0f, 3.0f, 0.0f),        
+		vec3(0.0f, 1.0f, 0.0f));                
 	createShadowMap(lightTransform, time, deltaTime);
 
 	float cubeMapX = 0.0f;  // X coordinate for cube map center
-	float cubeMapY = 4.2f;  // Y coordinate for cube map center
-	float cubeMapZ = 0.0f;  // Z coordinate for cube map center
+	float cubeMapY = 4.2f;  // y coordinate for cube map center
+	float cubeMapZ = 0.0f;  // z coordinate for cube map center
 	prepareCubeMap(cubeMapX, cubeMapY, cubeMapZ, time, deltaTime);
 
 	// clear screen and buffers
@@ -788,7 +783,7 @@ void onRender()
 	// render the scene objects
 	renderScene(matrixView, time, deltaTime);
 
-	renderReflectiveObjects(matrixView, time, deltaTime);
+	renderVase(matrixView, time, deltaTime);
 
 	// essential for double-buffering technique
 	glutSwapBuffers();
